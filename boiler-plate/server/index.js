@@ -22,6 +22,8 @@ mongoose.connect(config.mongoURI,{
 
 app.get('/',(req,res) => res.send("hello world haha"));
 
+app.get('/api/hello', (req,res) => res.send("이제 되잖아 하하"));
+
 app.post('/api/users/register',(req,res) => {
 
     //get informations from client & save data in database
