@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import {useDispatch} from 'react-redux'
 import {registerUser} from '../../../_actions/user_action';
-import axios from 'axios';
 
 function RegisterPage(props){
     const dispatch = useDispatch();
@@ -29,7 +28,7 @@ function RegisterPage(props){
 
     const onSubmitHandler = (evnet) => {
         evnet.preventDefault();
-        
+
         if(Password !== ConfirmPassword){
             return alert('비밀번호가 일치하지 않습니다');
         }
@@ -41,14 +40,15 @@ function RegisterPage(props){
             confirmpassword: ConfirmPassword
         }
 
-        axios.post('/api/users/register',body)
-        .then(res => {
-            if(res.data.isRegisterSuccess){
-                props.history.push("/login");
-            }else{
-                alert(res.data.message);
-            }
-        })
+        dispatch(registerUser(body))
+            .then(res=>{
+                if(res.payload.success){
+                    props.history.push('/login');
+                }else{
+                    alert('fail to sign up');
+                }
+            });
+                
     }
 
     return(

@@ -5,20 +5,24 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const session = require('express-session');
+const models = require('./models/index.js');
+const jwt = require('jsonwebtoken');
+const secretObj = require('./config/jwt');
+
+// var sqlConnect = require('./config/dev');
+// sqlConnect.connect();
+
+models.sequelize.sync().then( () =>{
+    console.log("DB 연결 성공");
+}).catch(err => {
+    console.log("연결 실패");
+    console.log(err);
+});
 
 //application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({extended:true}));
 //aplication/json
 app.use(bodyParser.json());
-app.use(session({
-    key:'sid',
-    secret: 'secret',
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-        maxAge: 24000 * 60 * 60
-    }
-}));
 app.use(cookieParser());
 
 app.get('/',(req,res) => res.send("hello world haha"));
@@ -26,98 +30,100 @@ app.get('/',(req,res) => res.send("hello world haha"));
 app.get('/api/hello', (req,res) => res.send("이제 되잖아 하하"));
 
 app.post('/api/users/register',(req,res) => {
-    var sqlConnect = require('./config/dev');
-    sqlConnect.connect();
     var result;
-    //get informations from client & save data in database
     userInfo = req.body;
+    //check password & password-confirm
     if(userInfo.password !== userInfo.confirmpassword){
         return res.json({
-            isloginSuccess:false,
+            isRegisterSuccess:false,
             message:"passwordMissmatch"
         });
     }
+    //get informations from client & save data in database here
     var inputPassword = userInfo.password;
     var salt = Math.round((new Date().valueOf()*Math.random()))+"";
     var hashPassword = crypto.createHash('sha512').update(inputPassword+salt).digest('hex');
-
-    var sql = 'INSERT INTO user(email,password,salt,name,profile_image)VALUES(?,?,?,?,?)';
-
-    var params = [userInfo.email,hashPassword,salt,userInfo.name,userInfo.profile_image];
-    sqlConnect.query(sql,params,function(err,rows,fields) {
-        if(err){
-            console.log(err);
-            result = err;
-            sqlConnect.end();
-            return result;
-        }else{
-            console.log(rows.insertId);
-        }
-        result = rows[rows.insertId];
-        sqlConnect.end();
-        return result;
+    models.User2.create({
+        userID:userInfo.email,
+        password:hashPassword,
+        salt: salt,
+        name: userInfo.name,
+        image_profile: userInfo.profile_image,
+        created_at: new Date(),
+        updated_at: new Date()
+    }).then(result => {
+        console.log("data insert success");
+        return res.json({
+            isRegisterSuccess: true,
+            user: result
+        });
+    }).catch(err => {
+        return res.json({
+            isRegisterSuccess: false,
+            message: "duplicated Email"
+        });
     });
 });
 
-app.post('/api/users/login',(req,res) => {
-    var sqlConnect = require('./config/dev');
-    sqlConnect.connect();
-        var sql = 'SELECT * FROM user where email = ?';
-        var param = [req.body.email];
-        var user = null;
-        sqlConnect.query(sql,param,function(err, rows, fields) {
-            if (!err){
-              console.log('success');
-              user = rows[0];
-                //find requested email in database
-                if(!user){
-                    return res.json({
-                        loginSuccess: false,
-                        message: "there are no email in database"
-                    })
-                }
-                //check password
-                var hashPassword = crypto.createHash('sha512').update(req.body.password+user.salt).digest('hex');
-                if(user.password != hashPassword){
-                    console.log(user.password,req.body.password);
-                    return res.json({
-                        isloginSuccess:false,
-                        message:"wrong password"
-                    });
-                }
-                sqlConnect.end();
-                req.session.user = user;
-                return res.json({
-                    email : user.email,
-                    name : user.name
-                })
-            }else
-              console.log('Error while performing Query.', err);
-              sqlConnect.end();
-              return res.json({
-                isloginSuccess:false,
-                message:"sql error"
-            });
+app.post('/api/users/login',async function(req,res) {
+        //generate token
+        let token = jwt.sign({
+            email:req.body.email
+        },
+        secretObj.secret,
+        {
+            expiresIn: '30m'
         });
+    
+        //find user with user-email
+        var result = await models.User2.findOne({
+            where: {
+                email : req.body.email
+            }
+        });
+        
+        //if email not exist
+        if(result==null){
+            return res.json({
+                loginSuccess:false,
+                message:"Wrong Email"
+            });
+        }
+
+        //hashing password
+        var dbPassword = result.dataValues.password;
+        var inputPassword = req.body.password;
+        var salt = result.dataValues.salt;
+        var hashPassword = crypto.createHash("sha512").update(inputPassword+salt).digest("hex");
+
+        //if password not equals
+        if(dbPassword != hashPassword){
+            return res.json({
+                loginSuccess: false,
+                message: "Wrong Password"
+            })
+        }else{
+            //give user token
+            res.cookie("user",token);
+            return res.json({
+                loginSuccess: true,
+                email : result.dataValues.email,
+                name : result.dataValues.name,
+                token: token
+            });
+        }
 });
 
+//remove token information
 app.get('/api/users/logout',(req,res) => {
-    if(req.session.user){
-        req.session.destroy(function(err){
-            if(err){
-                console.log('세션 삭제 실패');
-                return res.json({success:false,err});
-            }else{
-                console.log('세션 삭제 성공');
-                res.clearCookie('sid');
-                return res.status(200).send({
-                    success: true
-                });
-            }
+    if(req.cookies.user){
+        res.clearCookie('user');
+        console.log("token remove success");
+        return res.status(200).send({
+            success:true
         });
     }else{
         console.log('not logined');
-
     }
 });
 

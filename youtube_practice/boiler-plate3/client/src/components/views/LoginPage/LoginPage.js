@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import Axios from 'axios'
 import {useDispatch} from 'react-redux'
 import {loginUser} from '../../../_actions/user_action';
-import axios from 'axios';
 
 function LoginPage(props){
     const dispatch = useDispatch();
@@ -26,14 +25,14 @@ function LoginPage(props){
             password: Password
         }
 
-        axios.post('/api/users/login',body)
-        .then(res =>{
-            if(res.data.loginSuccess){
-                props.history.push('/');
-            }else{
-                alert(res.data.message);
-            }
-        });
+        dispatch(loginUser(body))
+            .then(res=>{
+                if(res.payload){
+                    props.history.push('/');
+                }else{
+                    alert('errer');
+                }
+            });
                 
     }
 
