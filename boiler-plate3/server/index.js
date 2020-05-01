@@ -9,9 +9,6 @@ const models = require('./models/index.js');
 const jwt = require('jsonwebtoken');
 const secretObj = require('./config/jwt');
 
-// var sqlConnect = require('./config/dev');
-// sqlConnect.connect();
-
 models.sequelize.sync().then( () =>{
     console.log("DB 연결 성공");
 }).catch(err => {
