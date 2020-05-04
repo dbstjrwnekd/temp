@@ -4,12 +4,13 @@ import {registerUser} from '../../../_actions/user_action';
 import axios from 'axios';
 
 function RegisterPage(props){
-    const dispatch = useDispatch();
 
     const [Email, setEmail] = useState("");
     const [Password, setPassword] = useState("");
     const [ConfirmPassword, setComfirmPassword] = useState("");
     const [Name, setName] = useState("");
+    const [Age, setAge] = useState("");
+    const [Gender, setGender] = useState(0);
 
     const onEmailHandler = (event) =>{
         setEmail(event.currentTarget.value);
@@ -21,6 +22,14 @@ function RegisterPage(props){
 
     const onNameHandler = (event) =>{
         setName(event.currentTarget.value);
+    }
+
+    const onAgeHandler = (event) =>{
+        setAge(event.currentTarget.value);
+    }
+
+    const onGenderHandler = (event) =>{
+        setGender(event.currentTarget.value);
     }
 
     const onConfirmPasswordHandler = (event) =>{
@@ -38,7 +47,9 @@ function RegisterPage(props){
             email: Email,
             name: Name,
             password: Password,
-            confirmpassword: ConfirmPassword
+            confirmpassword: ConfirmPassword,
+            age : Age,
+            gender: Gender
         }
 
         axios.post('/api/users/register',body)
@@ -66,6 +77,11 @@ function RegisterPage(props){
                 <input type='password' value={Password} onChange={onPasswordHandler} />
                 <label>Password</label>
                 <input type='password' value={ConfirmPassword} onChange={onConfirmPasswordHandler} />
+                <label>Age</label>
+                <input type='text' value={Age} onChange={onAgeHandler} />
+                <label><input class="input_radio" type="radio" name="sequence" value="0" required onClick={onGenderHandler} />남성</label>
+			    <label><input class="input_radio" type="radio" name="sequence" value="1" required onClick={onGenderHandler}/>여성</label>
+                
                 <br />
                 <button type="submit">
                     회원가입

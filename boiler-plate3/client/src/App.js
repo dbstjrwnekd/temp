@@ -10,6 +10,8 @@ import LandingPage from './components/views/LandingPage/LandingPage';
 import LoginPage from './components/views/LoginPage/LoginPage';
 import RegisterPage from './components/views/RegisterPage/RegisterPage';
 import Footer from './components/views/Footer/Footer';
+import SearchPage from './components/views/SearchPage/SearchPage';
+import SearchedPage from './components/views/SearchPage/SearchedPage';
 
 function App() {
   return (
@@ -22,6 +24,8 @@ function App() {
           <Route exact path="/" component={LandingPage} />
           <Route exact path="/login" component={LoginPage}/>
           <Route exact path="/register" component={RegisterPage}/>
+          <Route exact path="/search" component={SearchPage}/>
+          <Route exact path="/searched" component={SearchedPage}/>
         </Switch>
         <Footer />
       </div>

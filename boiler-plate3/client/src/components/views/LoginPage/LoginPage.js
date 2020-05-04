@@ -1,12 +1,7 @@
 import React, { useState } from 'react'
-import Axios from 'axios'
-import {useDispatch} from 'react-redux'
-import {loginUser} from '../../../_actions/user_action';
 import axios from 'axios';
 
 function LoginPage(props){
-    const dispatch = useDispatch();
-
     const [Email, setEmail] = useState("");
     const [Password, setPassword] = useState("");
 

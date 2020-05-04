@@ -4,10 +4,11 @@ const port = 5000;
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
-const session = require('express-session');
 const models = require('./models/index.js');
 const jwt = require('jsonwebtoken');
 const secretObj = require('./config/jwt');
+const sequelize = require('sequelize');
+const Op = sequelize.Op;
 
 models.sequelize.sync().then( () =>{
     console.log("DB 연결 성공");
@@ -26,6 +27,15 @@ app.get('/',(req,res) => res.send("hello world haha"));
 
 app.get('/api/hello', (req,res) => res.send("이제 되잖아 하하"));
 
+app.get('/api/categories', (req, res) => {
+    models.Category.findAll({})
+        .then(result => {
+            return res.json(result);
+        }).catch( err=> {
+            console.log(err)
+        });
+});
+
 app.post('/api/users/register',(req,res) => {
     var result;
     userInfo = req.body;
@@ -40,21 +50,35 @@ app.post('/api/users/register',(req,res) => {
     var inputPassword = userInfo.password;
     var salt = Math.round((new Date().valueOf()*Math.random()))+"";
     var hashPassword = crypto.createHash('sha512').update(inputPassword+salt).digest('hex');
-    models.User2.create({
+    models.User.create({
         userID:userInfo.email,
         password:hashPassword,
         salt: salt,
         name: userInfo.name,
         image_profile: userInfo.profile_image,
         created_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
+        age:userInfo.age,
+        gender:userInfo.gender,
+        roleId:2
     }).then(result => {
-        console.log("data insert success");
+        for(var i=0;i<userInfo.categoryIds.length;i++){
+            models.User_Category.create({
+                userId : result.dataValues.id,
+                categoryId : userInfo.categoryIds[i]
+            });
+            models.sequelize.query("UPDATE category_id SET counting=counting+1 WHERE id = :id",{
+                replacements:{id:userInfo.categoryIds[i]}
+            });
+        }
+        console.log("user_info insert success");
         return res.json({
             isRegisterSuccess: true,
-            user: result
+            user: result,
+            categorys: userInfo.categorys
         });
     }).catch(err => {
+        console.log(err);
         return res.json({
             isRegisterSuccess: false,
             message: "duplicated Email"
@@ -69,11 +93,11 @@ app.post('/api/users/login',async function(req,res) {
         },
         secretObj.secret,
         {
-            expiresIn: '30m'
+            expiresIn: '60m'
         });
     
         //find user with user-email
-        var result = await models.User2.findOne({
+        var result = await models.User.findOne({
             where: {
                 email : req.body.email
             }
@@ -122,6 +146,43 @@ app.get('/api/users/logout',(req,res) => {
     }else{
         console.log('not logined');
     }
+});
+
+//검색
+app.get('/api/booktrailer/search/:searchWord',(req,res) => {
+    var searchWord = req.params.searchWord;
+
+    models.BookTrailer.findAll({
+        where:{
+            [Op.or]:[
+                {
+                    title:{
+                        [Op.like]: "%"+searchWord+"%"
+                    }
+                },
+                {
+                    author:{
+                        [Op.like]: "%"+searchWord+"%"
+                    }
+                },
+                {
+                    content:{
+                        [Op.like]: "%"+searchWord+"%"
+                    }
+                }
+            ]
+        }
+    }).then(result => {
+        return res.json({
+            isSearchSuccess:true,
+            data:result
+        });
+    }).catch(err => {
+        return res.json({
+            isSearchSuccess:false,
+            message:err
+        });
+    });
 });
 
 app.listen(port, () => console.log(`port on ${port}`));
