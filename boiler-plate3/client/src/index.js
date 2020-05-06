@@ -18,9 +18,7 @@ ReactDOM.render(
     window.__REDUX_DEVTOOLS_EXTENSION__ &&
     window.__REDUX_DEVTOOLS_EXTENSION__()
   )}>
-  <React.StrictMode>
     <App />
-  </React.StrictMode>
   </Provider>,
   document.getElementById('root')
 );

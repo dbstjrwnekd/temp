@@ -3,11 +3,6 @@ import axios from 'axios'
 
 function LandingPage(props){
 
-    useEffect(()=>{
-       axios.get('/api/hello')
-       .then(res => console.log(res.data)); 
-    },[]);
-
     const onClickHandler = () => {
         axios.get('/api/users/logout')
         .then(res => {

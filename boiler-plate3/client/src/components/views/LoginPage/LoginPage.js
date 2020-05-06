@@ -1,55 +1,159 @@
-import React, { useState } from 'react'
+import React, { Component } from 'react';
 import axios from 'axios';
+import './Login.css';
 
-function LoginPage(props){
-    const [Email, setEmail] = useState("");
-    const [Password, setPassword] = useState("");
+class LoginPage extends Component {
+  state = {
+    emailEntered: '',
+    isEmailValid: false,
+    passwordEntered: '',
+    isPasswordValid: false
+  };
 
-    const onEmailHandler = (event) =>{
-        setEmail(event.currentTarget.value);
+  
+
+  inputClassNameHelper = boolean => {
+    switch (boolean) {
+      case true:
+        return 'is-valid';
+      case false:
+        return 'is-invalid';
+      default:
+        return '';
     }
+  };
 
-    const onPasswordHandler = (event) =>{
-        setPassword(event.currentTarget.value);
-    }
+  isEveryFieldValid = () => {
+    const {isEmailValid, isPasswordValid } = this.state;
+    return isEmailValid && isPasswordValid;
+  };
 
-    const onSubmitHandler = (evnet) => {
-        evnet.preventDefault();
 
-        let body = {
-            email: Email,
-            password: Password
-        }
-
-        axios.post('/api/users/login',body)
+  buttonClick(event, data){
+    event.preventDefault();
+    console.log(data);
+    axios.post('/api/users/login',data)
         .then(res =>{
             if(res.data.loginSuccess){
-                props.history.push('/');
+                this.props.history.push('/');
             }else{
                 alert(res.data.message);
             }
-        });
-                
+      })
+   
+  }
+
+  renderSubmitBtn = (emailEntered, passwordEntered) => {
+    if (this.isEveryFieldValid()) {
+
+      const body={
+        email: emailEntered,
+        password: passwordEntered
+      }
+      //const jBody = JSON.stringify(body)
+
+      return (
+        <button 
+            type="submit" 
+            className="btn btn-primary btn-block"
+            onClick={(event) =>
+                this.buttonClick(event, body)}
+            >
+          Submit
+        </button>
+      );
     }
 
-    return(
-        <div style = {{
-            display:'flex', justifyContent: 'center', alignItems:'center',
-            width: '100%', height: '100vh'
-        }}>
-            <form style={{display:'flex', flexDirection: 'column'}}
-                onSubmit={onSubmitHandler}>
-                <label>Email</label>
-                <input type='email' value={Email} onChange={onEmailHandler} />
-                <label>Password</label>
-                <input type='password' value={Password} onChange={onPasswordHandler} />
-                <br />
-                <button type="submit">
-                    Login
-                </button>
-            </form>
-        </div>
-    )
+    return (
+      <button type="submit" className="btn btn-primary btn-block" disabled>
+        Submit
+      </button>
+    );
+  };
+
+  validateEmail = emailEntered => {
+    const emailRegExp = /^[\w-]+(\.[\w-]+)*@([a-z0-9-]+(\.[a-z0-9-]+)*?\.[a-z]{2,6}|(\d{1,3}\.){3}\d{1,3})(:\d{4})?$/;
+
+    if (emailEntered.match(emailRegExp)) {
+      this.setState({
+        isEmailValid: true,
+        emailEntered
+      });
+    } else {
+      this.setState({
+        isEmailValid: false,
+        emailEntered
+      });
+    }
+  };
+
+  isEnteredEmailValid = () => {
+    const { emailEntered, isEmailValid } = this.state;
+
+    if (emailEntered) return isEmailValid;
+  };
+
+  validatePassword = passwordEntered => {
+
+    if (passwordEntered.length>5) {
+      this.setState({
+        isPasswordValid: true,
+        passwordEntered
+      });
+    } else {
+      this.setState({
+        isPasswordValid: false,
+        passwordEntered
+      });
+    }
+  };
+
+  isEnteredPasswordValid = () => {
+    const { passwordEntered, isPasswordValid } = this.state;
+
+    if (passwordEntered) return isPasswordValid;
+  };
+
+  
+  render() {
+    return (
+      <div className="App">
+        <form className="myForm">
+          
+          <div className="form-group">
+            <label htmlFor="emailInput">이메일</label>
+            <input
+              type="email"
+              className={`form-control ${this.inputClassNameHelper(
+                this.isEnteredEmailValid()
+              )}`}
+              id="emailInput"
+              aria-describedby="emailHelp"
+              placeholder="abc@gmail.com"
+              onChange={e => this.validateEmail(e.target.value)}
+              required
+            />
+          </div>
+              <div>{this.state.emailEntered}</div>
+              <div className="form-group">
+            <label htmlFor="nameInput">비밀번호</label>
+            <input
+              type="password"
+              className={`form-control ${this.inputClassNameHelper(
+                this.isEnteredPasswordValid()
+              )}`}
+              id="passwordInput"
+              onChange={e => this.validatePassword(e.target.value)}
+              required
+            />
+            <div>{this.props.passwordEntered}</div>
+          </div>
+
+         {this.renderSubmitBtn(this.state.emailEntered, this.state.passwordEntered)}
+        </form>
+      </div>
+    );
+  }
 }
 
 export default LoginPage;
